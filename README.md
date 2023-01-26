@@ -16,7 +16,7 @@ This module integrates Spotify with Drupal CMS.
 It currently supports the Artists.
 
  * To submit bug reports and feature suggestions, or track changes:
-   https://github.com/ivan-trokhanenko/ivan_rock
+   https://github.com/ivan-trokhanenko/spotify/issues
 
 REQUIREMENTS
 ------------
