@@ -1,0 +1,15 @@
+name: 'Spotify Artist'
+type: module
+description: 'Provides Spotify Artist content type.'
+core_version_requirement: '^8.9 || ^9 || ^10'
+package: 'Spotify'
+dependencies:
+  - 'spotify:spotify'
+  - 'drupal:field'
+  - 'drupal:image'
+  - 'drupal:link'
+  - 'drupal:menu_ui'
+  - 'drupal:node'
+  - 'drupal:path'
+  - 'drupal:taxonomy'
+  - 'drupal:user'

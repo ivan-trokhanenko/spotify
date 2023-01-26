@@ -1,0 +1,27 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.node.teaser
+    - field.field.node.artist_spotify.field_genre
+    - field.field.node.artist_spotify.field_image
+    - field.field.node.artist_spotify.field_link
+    - field.field.node.artist_spotify.field_name
+    - node.type.artist_spotify
+  module:
+    - user
+id: node.artist_spotify.teaser
+targetEntityType: node
+bundle: artist_spotify
+mode: teaser
+content:
+  links:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 100
+    region: content
+hidden:
+  field_genre: true
+  field_image: true
+  field_link: true
+  field_name: true

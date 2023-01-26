@@ -1,0 +1,9 @@
+spotify.settings:
+  path: '/admin/config/services/spotify'
+  defaults:
+    _form: '\Drupal\spotify\Form\SpotifySettingsForm'
+    _title: 'Spotify'
+  requirements:
+    _permission: 'administer spotify settings'
+  options:
+    _admin_route: TRUE

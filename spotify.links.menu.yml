@@ -1,0 +1,5 @@
+spotify.settings:
+  title: 'Spotify'
+  description: 'Spotify configuration page.'
+  route_name: spotify.settings
+  parent: system.admin_config_services

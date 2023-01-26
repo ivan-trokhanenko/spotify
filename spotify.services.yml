@@ -1,0 +1,4 @@
+services:
+  spotify.manager:
+    class: Drupal\spotify\SpotifyManager
+    arguments: ['@http_client', '@state', '@config.factory']

@@ -1,0 +1,12 @@
+{
+  "name": "drupal/spotify",
+  "type": "drupal-module",
+  "description": "Provides Spotify integration for Drupal.",
+  "keywords": [
+    "Drupal",
+    "Spotify"
+  ],
+  "license": "GPL-2.0+",
+  "homepage": "https://github.com/ivan-trokhanenko/ivan_rock/tree/main/spotify",
+  "minimum-stability": "dev"
+}

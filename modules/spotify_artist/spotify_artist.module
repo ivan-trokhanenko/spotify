@@ -1,0 +1,160 @@
+<?php
+
+/**
+ * @file
+ * Contains hooks and other things for the spotify_artist module.
+ */
+
+use Drupal\node\NodeInterface;
+use Drupal\taxonomy\Entity\Term;
+use Drupal\taxonomy\Entity\Vocabulary;
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Session\AccountInterface;
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function spotify_artist_form_node_artist_spotify_form_alter(array &$form, FormStateInterface $form_state) {
+  // Add description to the ID field.
+  $form['title']['widget'][0]['value']['#description'] = t("Enter the Spotify Artist ID and click the 'Save' button. If the ID is correct, the artist info will be filled in automatically.");
+  // Hide autofilled fields in the node creation form.
+  $form['field_name']['#access'] = FALSE;
+  $form['field_image']['#access'] = FALSE;
+  $form['field_genre']['#access'] = FALSE;
+  $form['field_link']['#access'] = FALSE;
+  // Add node limit validation.
+  $form['#validate'][] = '_spotify_artist_limit_validate';
+  // Add artist id validation.
+  $form['#validate'][] = '_spotify_artist_id_validate';
+}
+
+/**
+ * Provides artist limit error on the node creation form.
+ */
+function _spotify_artist_limit_validate(array &$form, FormStateInterface $form_state) {
+  // Get the number of artists.
+  $artists = \Drupal::entityTypeManager()
+    ->getStorage('node')
+    ->loadByProperties(['type' => 'artist_spotify']);
+  $count = count($artists);
+  if ($count >= 20) {
+    // Administrator should be able to save up to 20 Spotify artist ids.
+    $form_state->setErrorByName('', t('You reached the limit of @count artists', ['@count' => $count]));
+  }
+}
+
+/**
+ * Provides validation of the Artist ID.
+ */
+function _spotify_artist_id_validate(array &$form, FormStateInterface $form_state) {
+  if ($form_state->hasValue('title')) {
+    $title = $form_state->getValue('title');
+    /* @var $spotify_manager \Drupal\spotify\SpotifyManagerInterface */
+    $spotify_manager = \Drupal::service('spotify.manager');
+    // Make API call.
+    $artist = $spotify_manager->getArtist($title[0]['value']);
+    if (!$artist) {
+      $form_state->setErrorByName('title', t('Invalid Artist ID.'));
+    }
+  }
+}
+
+/**
+ * Implement hook_node_access().
+ */
+function spotify_artist_node_access(NodeInterface $node, $op, AccountInterface $account) {
+  // The Artist page should only be visible to logged-in users.
+  if ($node->bundle() == 'artist_spotify' && ($op == 'view' || $op == 'view all revisions')) {
+    return AccessResult::forbiddenIf($account->isAnonymous())
+      ->cachePerUser()
+      ->addCacheableDependency($node);
+  }
+  return AccessResult::neutral();
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_presave().
+ */
+function spotify_artist_node_presave(NodeInterface $node) {
+  if ($node->getType() == 'artist_spotify') {
+    /* @var $spotify_manager \Drupal\spotify\SpotifyManagerInterface */
+    $spotify_manager = \Drupal::service('spotify.manager');
+    $artist = $spotify_manager->getArtist($node->getTitle());
+    if ($artist) {
+      // Set name field.
+      $node->set('field_name', $artist->name);
+      // Set genre field.
+      $node->set('field_genre', spotify_artist_set_taxonomy($artist->genres));
+      // Set link field.
+      $node->set('field_link', ['uri' => $artist->external_urls->spotify]);
+      // Set image field.
+      $image = reset($artist->images);
+      $file_id = spotify_artist_set_image($image->url);
+      if ($file_id) {
+        $node->set('field_image', ['target_id' => $file_id, 'alt' => $artist->name]);
+      }
+    }
+  }
+}
+
+/**
+ * Creates taxonomy term value.
+ *
+ * @param array $genres
+ *  List of genres.
+ *
+ * @return array
+ *  List of taxonomy terms ids.
+ *
+ * @throws \Drupal\Core\Entity\EntityStorageException
+ */
+function spotify_artist_set_taxonomy(array $genres) {
+  // Set taxonomy vocabulary id.
+  $vid = 'genre';
+  // Check if a taxonomy vocabulary exists.
+  $vocabularies = Vocabulary::loadMultiple();
+  if (!isset($vocabularies[$vid])) {
+    throw new Exception('The Genre vocabulary does not exist.');
+  }
+  // Check if the taxonomy terms exist, if not create them.
+  $taxonomies = [];
+  foreach ($genres as $genre) {
+    $query = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->getQuery();
+    $query->condition('vid', $vid);
+    $query->condition('name', $genre);
+    $taxonomy_id = $query->execute();
+    if (empty($taxonomy_id)) {
+      $term = Term::create([
+        'vid' => $vid,
+        'name' => $genre,
+      ]);
+      $term->save();
+      $taxonomy_id = $term->id();
+    }
+    $taxonomies[] = is_array($taxonomy_id) ? ['target_id' => current($taxonomy_id)] : ['target_id' => $taxonomy_id];
+  }
+  return $taxonomies;
+}
+
+/**
+ * Saving artist image locally.
+ *
+ * @param string $url
+ *  The image URL.
+ *
+ * @return false|int
+ *  The file id.
+ */
+function spotify_artist_set_image(string $url) {
+  try {
+    // Save image into the public directory.
+    /* @var $file \Drupal\file\Entity\File */
+    $file = \Drupal::service('file.repository')->writeData(file_get_contents($url), 'public://'. basename($url) . '.jpeg');
+    return $file->id();
+  }
+  catch (\Exception $e) {
+    \Drupal::logger('spotify_artist')->error($e->getMessage());
+    return FALSE;
+  }
+}

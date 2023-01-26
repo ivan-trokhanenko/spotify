@@ -1,0 +1,3 @@
+administer spotify settings:
+  title: 'Permission to manage Spotify settings'
+  restrict access: TRUE
