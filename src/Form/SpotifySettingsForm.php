@@ -54,6 +54,14 @@ class SpotifySettingsForm extends ConfigFormBase {
       '#required' => TRUE,
       '#default_value' => $config->get('client_secret'),
     ];
+    $form ['limit'] = [
+      '#type' => 'number',
+      '#title' => $this->t('Limit'),
+      '#description' => $this->t('Set a limit on the artists you can add.'),
+      '#min' => 1,
+      '#step' => 1,
+      '#required' => TRUE,
+    ];
 
     $dashboard_link = Link::fromTextAndUrl($this->t('Spotify Dashboard'),
       Url::fromUri('https://developer.spotify.com/dashboard/applications',
